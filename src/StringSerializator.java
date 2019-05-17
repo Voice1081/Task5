@@ -1,7 +1,13 @@
 public class StringSerializator implements IPrimitiveSerializator{
+    private final String[] names;
     @Override
-    public String getName() {
-        return "java.lang.String";
+    public String[] getNames() {
+        return names;
+    }
+
+    public StringSerializator(){
+        names = new String[1];
+        names[0] = "java.lang.String";
     }
 
     @Override

@@ -10,7 +10,8 @@ public class Serializator<T> {
     }
 
     public void register(IPrimitiveSerializator serializator){
-        primitives.put(serializator.getName(), serializator);
+        String[] names = serializator.getNames();
+        for(String name : names) primitives.put(name, serializator);
     }
 
     private String SerializeToString(Object o){
@@ -62,22 +63,74 @@ public class Serializator<T> {
     }
     private Object DeserializeToObject(String raw){
         String[] lines = raw.split("\\R");
+        int classLine = 0;
+        if (lines[0].equals("{")) classLine = 1;
         Class oClass = null;
+        Object o = null;
         try {
-            oClass = Class.forName(lines[0]);
+            oClass = Class.forName(lines[classLine]);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         try {
-            Object o = oClass.newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+            o = oClass.newInstance();
+        } catch (InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
-        for(int i = 1; i < lines.length; i++){
+        for(int i = classLine + 1; i < lines.length; i++){
+            String[] splited = lines[i].split(" ");
+            if(splited.length < 2) continue;
+            Field field = null;
+            try {
+                field = oClass.getDeclaredField(splited[1]);
+                field.setAccessible(true);
+            } catch (NoSuchFieldException e) {
+                e.printStackTrace();
+            }
+            if(primitives.containsKey(splited[0])){
+                Object value = primitives.get(splited[0]).Deserialize(lines[i+1]);
+                try {
+                    field.set(o, value);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                i += 1;
+            }
+            else if(lines[i+1].equals("null")){
+                try {
+                    field.set(o, null);
+                    i += 1;
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(lines[i+1].equals("{")){
+                Tuple<String, Integer> descrAndLength = getRefDescription(lines, i+1);
+                Object value = DeserializeToObject(descrAndLength.x);
+                try {
+                    field.set(o, value);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                i += descrAndLength.y;
+            }
+        }
+        return o;
+    }
 
+    private Tuple<String, Integer> getRefDescription(String[] lines, int pos){
+        StringBuilder description = new StringBuilder();
+        description.append(lines[pos]);
+        description.append('\n');
+        pos += 1;
+        int counter = 1;
+        while(counter != 0 && pos < lines.length){
+            description.append(lines[pos]);
+            description.append('\n');
+            if(lines[pos].equals("{")) counter += 1;
+            else if(lines[pos].equals("}")) counter -= 1;
+            pos += 1;
         }
-        return null;
+        return new Tuple<>(description.toString(), pos);
     }
 }

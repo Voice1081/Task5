@@ -1,5 +1,5 @@
 public interface IPrimitiveSerializator {
-    String getName();
+    String[] getNames();
     String Serialize(Object o);
     Object Deserialize(String raw);
 }

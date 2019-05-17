@@ -7,7 +7,10 @@ public class Main {
         Serializator<MyClass> s = new Serializator<>();
         s.register(new IntSerializator());
         s.register(new StringSerializator());
+        byte[] serialized = s.Serialize(a);
         System.out.println(new String(s.Serialize(a)));
+        MyClass aCopy = s.Deserialize(serialized);
+        System.out.println("finished");
 
     }
 }

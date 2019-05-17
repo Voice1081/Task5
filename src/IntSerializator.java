@@ -1,7 +1,13 @@
 public class IntSerializator implements IPrimitiveSerializator {
+    private final String[] names;
+    public IntSerializator(){
+        names = new String[2];
+        names[0] = "int";
+        names[1] = "java.lang.Integer";
+    }
     @Override
-    public String getName() {
-        return "java.lang.Integer";
+    public String[] getNames() {
+        return names;
     }
 
     @Override
@@ -11,6 +17,6 @@ public class IntSerializator implements IPrimitiveSerializator {
 
     @Override
     public Object Deserialize(String raw) {
-        return null;
+        return Integer.parseInt(raw);
     }
 }
