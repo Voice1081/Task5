@@ -14,10 +14,15 @@ public class Serializator<T> {
         for(String name : names) primitives.put(name, serializator);
     }
 
-    private String SerializeToString(Object o){
+    private String SerializeToString(Object o, int level){
         if(o == null) return "null";
         String serialized;
         StringBuilder serializedSB = new StringBuilder();
+        if(level == 0) {
+            serializedSB.append("deserializable");
+            serializedSB.append('\n');
+        }
+
         Class oClass = o.getClass();
         String oClassName = oClass.getName();
         if(primitives.containsKey(oClassName)) serialized =  primitives.get(oClassName).Serialize(o);
@@ -41,7 +46,7 @@ public class Serializator<T> {
                 serializedSB.append(' ');
                 serializedSB.append(fieldName);
                 serializedSB.append('\n');
-                serializedSB.append(new String(Serialize(fieldValue)));
+                serializedSB.append(SerializeToString(fieldValue, level+1));
                 serializedSB.append('\n');
             }
             serializedSB.append('}');
@@ -51,20 +56,21 @@ public class Serializator<T> {
     }
 
     public byte[] Serialize(Object o){
-        return SerializeToString(o).getBytes(StandardCharsets.UTF_8);
+        return SerializeToString(o,0).getBytes(StandardCharsets.UTF_8);
     }
 
-    public T Deserialize(byte[] raw){
+    public T Deserialize(byte[] raw) throws DeserializeException {
         return (T)DeserializeToObject(raw);
     }
 
-    private Object DeserializeToObject(byte[] raw){
-        return DeserializeToObject(new String(raw));
+    private Object DeserializeToObject(byte[] raw) throws DeserializeException {
+        return DeserializeToObject(new String(raw), 0);
     }
-    private Object DeserializeToObject(String raw){
+    private Object DeserializeToObject(String raw, int level) throws DeserializeException {
         String[] lines = raw.split("\\R");
-        int classLine = 0;
-        if (lines[0].equals("{")) classLine = 1;
+        if(level == 0 && !lines[0].equals("deserializable")) throw new DeserializeException("Not deserializable");
+        int classLine = 1;
+        if (lines[1].equals("{")) classLine = 2;
         Class oClass = null;
         Object o = null;
         try {
@@ -106,7 +112,7 @@ public class Serializator<T> {
             }
             else if(lines[i+1].equals("{")){
                 Tuple<String, Integer> descrAndLength = getRefDescription(lines, i+1);
-                Object value = DeserializeToObject(descrAndLength.x);
+                Object value = DeserializeToObject(descrAndLength.x, level + 1);
                 try {
                     field.set(o, value);
                 } catch (IllegalAccessException e) {
