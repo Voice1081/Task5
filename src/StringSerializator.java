@@ -12,12 +12,20 @@ public class StringSerializator implements IPrimitiveSerializator{
 
     @Override
     public String Serialize(Object o) {
-        return (String)o;
+        if(o == null) return "null";
+        String raw = (String)o;
+        return raw.replaceAll("\n", "\\\\n");
     }
 
     @Override
     public Object Deserialize(String raw) {
         if(raw.equals("null")) return null;
-        return raw;
+        StringBuilder sb = new StringBuilder();
+        String[] splited = raw.split("\\\\n");
+        for(int i = 0; i < splited.length; i++){
+            sb.append(splited[i]);
+            if(i != splited.length - 1) sb.append('\n');
+        }
+        return sb.toString();
     }
 }
